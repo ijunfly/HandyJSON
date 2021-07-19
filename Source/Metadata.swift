@@ -18,6 +18,8 @@
 //  Created by zhouzhuo on 07/01/2017.
 //
 
+import Foundation
+
 struct _class_rw_t {
     var flags: Int32
     var version: Int32
@@ -147,18 +149,33 @@ extension Metadata {
             guard let superclass = pointer.pointee.superclass else {
                 return nil
             }
-
-            // If the superclass doesn't conform to handyjson/handyjsonenum protocol,
-            // we should ignore the properties inside
-            if (superclass as? HandyJSON.Type) == nil && (superclass as? HandyJSONEnum.Type) == nil {
+            
+            // If it is SwiftObject, return no super class, or following is HandyJSON.Type line will crash
+            let superclassName = String(describing: superclass)
+            if superclassName.contains("SwiftObject") {
                 return nil
             }
-
+            
+            if superclassName == "NSObject" {
+                return nil
+            }
+            
+            // is HandyJSON.Type will crash if superclass is kind of NSObject
+            if superclass is NSObject.Type {
+                return nil
+            }
+            
+            // If the superclass doesn't conform to handyjson/handyjsonenum protocol,
+            // we should ignore the properties inside
+            if !(superclass is HandyJSON.Type) && !(superclass is HandyJSONEnum.Type) {
+                return nil
+            }
+            
             // ignore objc-runtime layer
             guard let metaclass = Metadata.Class(anyType: superclass) else {
                 return nil
             }
-
+            
             return metaclass
         }
 
